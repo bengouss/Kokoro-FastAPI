@@ -2,7 +2,6 @@
 FastAPI OpenAI Compatible API
 """
 
-import os
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -18,7 +17,6 @@ from .routers.debug import router as debug_router
 from .routers.development import router as dev_router
 from .routers.openai_compatible import router as openai_router
 from .routers.web_player import router as web_router
-
 
 def setup_logger():
     """Configure loguru logger with custom formatting"""
@@ -126,6 +124,31 @@ if settings.cors_enabled:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+basic_auth_creds = settings.basic_auth.split(",") if settings.basic_auth else []
+if len(basic_auth_creds) > 0:
+    @app.middleware("http")
+    async def validate_auth(request: Request, call_next):
+        auth_header = request.headers.get("Authentication") or request.headers.get("authorization")
+        if not auth_header:
+            return Response(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                headers={"WWW-Authenticate": "Basic"},
+            )
+        if not auth_header.startswith("Basic "):
+            return Response(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                headers={"WWW-Authenticate": "Basic"},
+            )
+        
+        auth_creds = auth_header.split(" ")[1]
+        if auth_creds not in settings.basic_auth:
+            return Response(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                headers={"WWW-Authenticate": "Basic"},
+            )
+
+        return await call_next(request)
 
 # Include routers
 app.include_router(openai_router, prefix="/v1")

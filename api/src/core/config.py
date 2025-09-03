@@ -1,3 +1,4 @@
+import os
 import torch
 from pydantic_settings import BaseSettings
 
@@ -57,6 +58,7 @@ class Settings(BaseSettings):
     web_player_path: str = "web"  # Path to web player static files
     cors_origins: list[str] = ["*"]  # CORS origins for web player
     cors_enabled: bool = True  # Whether to enable CORS
+    basic_auth: str = os.environ.get("BASIC_AUTH", "")
 
     # Temp File Settings for WEB Ui
     temp_file_dir: str = "api/temp_files"  # Directory for temporary audio files (relative to project root)
